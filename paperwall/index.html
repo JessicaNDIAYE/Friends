@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PaperWall ✦ Your Digital Journal</title>
+  <title>PaperWall ✦ Your Space of Infinite Possibility</title>
 
-  <!-- Fonts: handwritten + clean -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -18,19 +18,21 @@
        AUTH SCREEN
   ═══════════════════════════════════════════ -->
   <div id="auth-screen" class="auth-screen">
-    <div class="auth-paper">
-      <div class="auth-header">
-        <h1 class="logo">PaperWall</h1>
-        <p class="logo-sub">your little corner of the internet ✦</p>
+    <div class="auth-card">
+
+      <div class="auth-brand">
+        <div class="auth-logo-wrap">
+          <div class="auth-logo-dot"></div>
+          <h1 class="auth-logo">PaperWall</h1>
+        </div>
+        <p class="auth-subtitle">SPACE OF INFINITE POSSIBILITY ✦</p>
       </div>
 
-      <!-- Tabs: Login / Sign up -->
       <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="login">Sign in</button>
-        <button class="auth-tab" data-tab="signup">Sign up</button>
+        <button class="auth-tab active" data-tab="login">sign in</button>
+        <button class="auth-tab" data-tab="signup">sign up</button>
       </div>
 
-      <!-- Login Form -->
       <form id="login-form" class="auth-form active">
         <div class="field">
           <label>email</label>
@@ -40,11 +42,10 @@
           <label>password</label>
           <input type="password" id="login-password" placeholder="••••••••" required />
         </div>
-        <button type="submit" class="btn-primary">open my journal →</button>
+        <button type="submit" class="btn-pill">OPEN MY JOURNAL →</button>
         <p id="login-error" class="form-error"></p>
       </form>
 
-      <!-- Sign Up Form -->
       <form id="signup-form" class="auth-form">
         <div class="field">
           <label>username</label>
@@ -58,119 +59,142 @@
           <label>password</label>
           <input type="password" id="signup-password" placeholder="••••••••" required minlength="6" />
         </div>
-        <button type="submit" class="btn-primary">start my journal →</button>
+        <button type="submit" class="btn-pill">START MY JOURNAL →</button>
         <p id="signup-error" class="form-error"></p>
         <p id="signup-success" class="form-success"></p>
       </form>
+
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════
-       MAIN APP (shown after login)
+       MAIN APP
   ═══════════════════════════════════════════ -->
   <div id="app" class="app hidden">
 
-    <!-- Top bar -->
-    <header class="topbar">
-      <span class="topbar-logo">PaperWall</span>
-      <div class="topbar-right">
-        <span id="topbar-username" class="topbar-user"></span>
-        <button id="logout-btn" class="btn-ghost">sign out</button>
+    <!-- ── Top header ── -->
+    <header class="app-header">
+      <div class="header-date-block">
+        <span id="header-day" class="header-day"></span>
+        <span id="header-date" class="header-date"></span>
+      </div>
+      <div class="header-center">
+        <span class="header-logo">PaperWall</span>
+      </div>
+      <div class="header-right">
+        <span id="topbar-username" class="header-username"></span>
+        <button id="logout-btn" class="btn-icon-logout" title="sign out">✕</button>
       </div>
     </header>
 
-    <!-- Navigation tabs -->
-    <nav class="nav-tabs">
-      <button class="nav-tab active" data-tab="feed">🌍 Feed</button>
-      <button class="nav-tab" data-tab="journal">🔒 My Journal</button>
-    </nav>
+    <!-- ── Right-side month tabs ── -->
+    <aside class="side-tabs" id="side-tabs"></aside>
 
-    <!-- Main content area -->
+    <!-- ── Main scrollable content ── -->
     <main class="main-content">
-
-      <!-- New Post composer -->
-      <section class="composer-wrap">
-        <div class="composer-paper">
-          <div class="composer-header">
-            <span class="composer-title">new page</span>
-            <div class="privacy-toggle">
-              <label class="toggle-label">
-                <input type="checkbox" id="is-private-toggle" />
-                <span class="toggle-track">
-                  <span class="toggle-thumb"></span>
-                </span>
-                <span id="privacy-label-text">public 🌍</span>
-              </label>
-            </div>
-          </div>
-
-          <textarea
-            id="post-content"
-            class="post-textarea"
-            placeholder="Today I felt..."
-            maxlength="1000"
-          ></textarea>
-
-          <div class="composer-footer">
-            <label class="image-upload-label" for="post-image">
-              <span class="upload-icon">📎</span> attach a photo
-              <input type="file" id="post-image" accept="image/*" hidden />
-            </label>
-            <div id="image-preview-wrap" class="image-preview-wrap hidden">
-              <img id="image-preview" src="" alt="preview" />
-              <button id="remove-image" class="remove-img-btn">✕</button>
-            </div>
-            <button id="submit-post" class="btn-primary">pin it ✦</button>
-          </div>
-          <p id="post-error" class="form-error"></p>
-        </div>
-      </section>
 
       <!-- Feed section -->
       <section id="feed-section" class="posts-section active">
-        <div class="section-header">
-          <h2 class="section-title">what everyone's feeling</h2>
-        </div>
-        <div id="feed-posts" class="posts-grid">
-          <div class="loading-note">loading pages...</div>
+        <p class="section-tagline">what everyone's feeling</p>
+        <div id="feed-posts" class="masonry-grid">
+          <div class="loading-card">loading pages...</div>
         </div>
       </section>
 
       <!-- Journal section -->
       <section id="journal-section" class="posts-section">
-        <div class="section-header">
-          <h2 class="section-title">my private pages</h2>
-        </div>
-        <div id="journal-posts" class="posts-grid">
-          <div class="loading-note">loading your entries...</div>
+        <p class="section-tagline">my private pages</p>
+        <div id="journal-posts" class="masonry-grid">
+          <div class="loading-card">loading your entries...</div>
         </div>
       </section>
 
     </main>
-  </div>
+
+    <!-- ── Bottom navigation (GoodNotes-style) ── -->
+    <nav class="bottom-nav">
+      <button class="bottom-tab active" data-tab="feed">
+        <span class="btab-icon">🌍</span>
+        <span class="btab-label">FEED</span>
+      </button>
+      <button class="bottom-tab compose-trigger" id="compose-trigger">
+        <span class="btab-icon">✏️</span>
+        <span class="btab-label">NEW PAGE</span>
+      </button>
+      <button class="bottom-tab" data-tab="journal">
+        <span class="btab-icon">🔒</span>
+        <span class="btab-label">JOURNAL</span>
+      </button>
+    </nav>
+
+    <!-- ── Composer Modal ── -->
+    <div id="composer-overlay" class="composer-overlay hidden" role="dialog" aria-modal="true">
+      <div class="composer-modal">
+
+        <div class="composer-modal-header">
+          <span class="composer-modal-title">new page</span>
+          <button id="composer-close" class="composer-close-btn">✕</button>
+        </div>
+
+        <textarea
+          id="post-content"
+          class="post-textarea"
+          placeholder="Today I felt..."
+          maxlength="1000"
+        ></textarea>
+
+        <div class="composer-controls">
+
+          <!-- Image upload -->
+          <label class="image-upload-label" for="post-image">
+            <span>📎</span> attach photo
+            <input type="file" id="post-image" accept="image/*" hidden />
+          </label>
+
+          <!-- Image preview -->
+          <div id="image-preview-wrap" class="image-preview-wrap hidden">
+            <img id="image-preview" src="" alt="preview" />
+            <button id="remove-image" class="remove-img-btn">✕</button>
+          </div>
+
+          <!-- Privacy toggle -->
+          <div class="privacy-row">
+            <label class="toggle-label">
+              <input type="checkbox" id="is-private-toggle" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span id="privacy-label-text">public 🌍</span>
+            </label>
+          </div>
+
+        </div>
+
+        <p id="post-error" class="form-error"></p>
+
+        <button id="submit-post" class="btn-pill btn-pill-submit">PIN IT ✦</button>
+
+      </div>
+    </div>
+
+  </div><!-- /app -->
 
   <!-- ═══════════════════════════════════════════
-       POST CARD TEMPLATE (cloned by JS)
+       POST CARD TEMPLATE
   ═══════════════════════════════════════════ -->
   <template id="post-card-template">
     <article class="post-card">
-      <div class="post-card-inner">
-        <header class="post-card-header">
-          <span class="post-username"></span>
-          <span class="post-date"></span>
-        </header>
-        <p class="post-content-text"></p>
-        <div class="post-image-wrap hidden">
-          <img class="post-image" src="" alt="post image" />
-        </div>
-        <div class="post-footer">
-          <span class="post-privacy-badge"></span>
-        </div>
+      <div class="card-dot-sticker"></div>
+      <p class="post-content-text"></p>
+      <div class="post-image-wrap hidden">
+        <img class="post-image" src="" alt="" />
       </div>
+      <footer class="card-footer">
+        <span class="post-username"></span>
+        <span class="post-date"></span>
+      </footer>
     </article>
   </template>
 
-  <!-- Supabase JS SDK (CDN) -->
+  <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>

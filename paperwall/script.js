@@ -1,20 +1,22 @@
 /* ═══════════════════════════════════════════════════════
    PaperWall — script.js
    Stack: Vanilla JS + Supabase JS v2
-
-   ⚙️  SETUP — paste your values below:
 ═══════════════════════════════════════════════════════ */
 
 const SUPABASE_URL      = 'https://tvklioergzytwupzxfyi.supabase.co';
-// Paste your anon/public key here (Supabase dashboard → Project Settings → API)
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2a2xpb2VyZ3p5dHd1cHp4ZnlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMzk4ODcsImV4cCI6MjA2NzkxNTg4N30.QPoyB7azRnmpTiWorldeYP3UeEMv1gehQ3Auhc5ijF4';
 
-// Table and storage bucket names (must match what was created in Supabase)
-const TABLE   = 'paperwall_posts';
-const BUCKET  = 'paperwall-images';
+const TABLE  = 'paperwall_posts';
+const BUCKET = 'paperwall-images';
+
+/* ── Card color cycle (matches the planner palette) ── */
+const CARD_THEMES = ['card-navy', 'card-yellow', 'card-blue', 'card-cream', 'card-teal'];
+
+/* ── Month names for side tabs ─────────────────────── */
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
 /* ═══════════════════════════════════════════════════════
-   INIT SUPABASE CLIENT
+   INIT SUPABASE
 ═══════════════════════════════════════════════════════ */
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -25,54 +27,61 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser     = null;
 let currentUsername = null;
 let selectedFile    = null;
-let activeTab       = 'feed'; // 'feed' | 'journal'
+let activeTab       = 'feed';
 
 /* ═══════════════════════════════════════════════════════
    DOM REFS
 ═══════════════════════════════════════════════════════ */
-const authScreen      = document.getElementById('auth-screen');
-const appEl           = document.getElementById('app');
-const topbarUsername  = document.getElementById('topbar-username');
-const logoutBtn       = document.getElementById('logout-btn');
+const authScreen       = document.getElementById('auth-screen');
+const appEl            = document.getElementById('app');
+const topbarUsername   = document.getElementById('topbar-username');
+const logoutBtn        = document.getElementById('logout-btn');
 
-// Auth forms
-const loginForm       = document.getElementById('login-form');
-const signupForm      = document.getElementById('signup-form');
-const loginEmail      = document.getElementById('login-email');
-const loginPassword   = document.getElementById('login-password');
-const loginError      = document.getElementById('login-error');
-const signupEmail     = document.getElementById('signup-email');
-const signupPassword  = document.getElementById('signup-password');
-const signupUsername  = document.getElementById('signup-username');
-const signupError     = document.getElementById('signup-error');
-const signupSuccess   = document.getElementById('signup-success');
-const authTabs        = document.querySelectorAll('.auth-tab');
+// Auth
+const loginForm        = document.getElementById('login-form');
+const signupForm       = document.getElementById('signup-form');
+const loginEmail       = document.getElementById('login-email');
+const loginPassword    = document.getElementById('login-password');
+const loginError       = document.getElementById('login-error');
+const signupEmail      = document.getElementById('signup-email');
+const signupPassword   = document.getElementById('signup-password');
+const signupUsername   = document.getElementById('signup-username');
+const signupError      = document.getElementById('signup-error');
+const signupSuccess    = document.getElementById('signup-success');
+const authTabs         = document.querySelectorAll('.auth-tab');
 
 // Composer
-const postContent     = document.getElementById('post-content');
-const postImage       = document.getElementById('post-image');
-const imagePreviewWrap= document.getElementById('image-preview-wrap');
-const imagePreview    = document.getElementById('image-preview');
-const removeImageBtn  = document.getElementById('remove-image');
-const submitPostBtn   = document.getElementById('submit-post');
-const isPrivateToggle = document.getElementById('is-private-toggle');
-const privacyLabelText= document.getElementById('privacy-label-text');
-const postError       = document.getElementById('post-error');
+const composerOverlay  = document.getElementById('composer-overlay');
+const composerClose    = document.getElementById('composer-close');
+const composeTrigger   = document.getElementById('compose-trigger');
+const postContent      = document.getElementById('post-content');
+const postImage        = document.getElementById('post-image');
+const imagePreviewWrap = document.getElementById('image-preview-wrap');
+const imagePreview     = document.getElementById('image-preview');
+const removeImageBtn   = document.getElementById('remove-image');
+const submitPostBtn    = document.getElementById('submit-post');
+const isPrivateToggle  = document.getElementById('is-private-toggle');
+const privacyLabelText = document.getElementById('privacy-label-text');
+const postError        = document.getElementById('post-error');
 
-// Nav / sections
-const navTabs         = document.querySelectorAll('.nav-tab');
-const feedSection     = document.getElementById('feed-section');
-const journalSection  = document.getElementById('journal-section');
-const feedPostsEl     = document.getElementById('feed-posts');
-const journalPostsEl  = document.getElementById('journal-posts');
+// Nav
+const bottomTabs       = document.querySelectorAll('.bottom-tab[data-tab]');
+const feedSection      = document.getElementById('feed-section');
+const journalSection   = document.getElementById('journal-section');
+const feedPostsEl      = document.getElementById('feed-posts');
+const journalPostsEl   = document.getElementById('journal-posts');
+const sideTabsEl       = document.getElementById('side-tabs');
 
 // Card template
-const cardTemplate    = document.getElementById('post-card-template');
+const cardTemplate     = document.getElementById('post-card-template');
 
 /* ═══════════════════════════════════════════════════════
-   BOOT — check session
+   BOOT
 ═══════════════════════════════════════════════════════ */
 (async () => {
+  initHeader();
+  initSideTabs();
+
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -82,7 +91,6 @@ const cardTemplate    = document.getElementById('post-card-template');
     showAuth();
   }
 
-  // Listen for auth state changes
   sb.auth.onAuthStateChange(async (_event, session) => {
     if (session) {
       currentUser = session.user;
@@ -96,8 +104,30 @@ const cardTemplate    = document.getElementById('post-card-template');
   });
 })();
 
+/* ─── Initialize header date ────────────────────────── */
+function initHeader() {
+  const now   = new Date();
+  const days  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months= ['january','february','march','april','may','june',
+                 'july','august','september','october','november','december'];
+  document.getElementById('header-day').textContent  = days[now.getDay()];
+  document.getElementById('header-date').textContent =
+    `${months[now.getMonth()]} ${now.getDate()}`;
+}
+
+/* ─── Build right-side month tabs ───────────────────── */
+function initSideTabs() {
+  const currentMonth = new Date().getMonth();
+  MONTHS.forEach((m, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'side-tab' + (i === currentMonth ? ' current' : '');
+    tab.textContent = m;
+    sideTabsEl.appendChild(tab);
+  });
+}
+
 /* ═══════════════════════════════════════════════════════
-   HELPERS — show/hide screens
+   SHOW / HIDE SCREENS
 ═══════════════════════════════════════════════════════ */
 function showAuth() {
   authScreen.classList.remove('hidden');
@@ -112,22 +142,11 @@ function showApp() {
   loadJournal();
 }
 
-/* Load username from user_metadata */
 async function loadUsername() {
   const meta = currentUser.user_metadata;
-  if (meta && meta.username) {
-    currentUsername = meta.username;
-    return;
-  }
-  // Fallback: query from their most recent post
-  const { data } = await sb
-    .from(TABLE)
-    .select('username')
-    .eq('user_id', currentUser.id)
-    .limit(1);
-  if (data && data.length > 0) {
-    currentUsername = data[0].username;
-  }
+  if (meta?.username) { currentUsername = meta.username; return; }
+  const { data } = await sb.from(TABLE).select('username').eq('user_id', currentUser.id).limit(1);
+  if (data?.length) currentUsername = data[0].username;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -140,9 +159,7 @@ authTabs.forEach(tab => {
     const target = tab.dataset.tab;
     loginForm.classList.toggle('active', target === 'login');
     signupForm.classList.toggle('active', target === 'signup');
-    loginError.textContent = '';
-    signupError.textContent = '';
-    signupSuccess.textContent = '';
+    loginError.textContent = signupError.textContent = signupSuccess.textContent = '';
   });
 });
 
@@ -152,21 +169,20 @@ authTabs.forEach(tab => {
 loginForm.addEventListener('submit', async e => {
   e.preventDefault();
   loginError.textContent = '';
-  const btn = loginForm.querySelector('.btn-primary');
+  const btn = loginForm.querySelector('.btn-pill');
   btn.disabled = true;
-  btn.textContent = 'opening...';
+  btn.textContent = 'OPENING...';
 
   const { error } = await sb.auth.signInWithPassword({
-    email:    loginEmail.value.trim(),
+    email: loginEmail.value.trim(),
     password: loginPassword.value,
   });
 
   if (error) {
     loginError.textContent = error.message;
     btn.disabled = false;
-    btn.textContent = 'open my journal →';
+    btn.textContent = 'OPEN MY JOURNAL →';
   }
-  // On success, onAuthStateChange handles the rest
 });
 
 /* ═══════════════════════════════════════════════════════
@@ -174,28 +190,27 @@ loginForm.addEventListener('submit', async e => {
 ═══════════════════════════════════════════════════════ */
 signupForm.addEventListener('submit', async e => {
   e.preventDefault();
-  signupError.textContent = '';
-  signupSuccess.textContent = '';
-  const btn = signupForm.querySelector('.btn-primary');
+  signupError.textContent = signupSuccess.textContent = '';
+  const btn = signupForm.querySelector('.btn-pill');
   btn.disabled = true;
-  btn.textContent = 'creating...';
+  btn.textContent = 'CREATING...';
 
   const username = signupUsername.value.trim();
   if (!username) {
     signupError.textContent = 'please enter a username';
     btn.disabled = false;
-    btn.textContent = 'start my journal →';
+    btn.textContent = 'START MY JOURNAL →';
     return;
   }
 
   const { error } = await sb.auth.signUp({
     email:    signupEmail.value.trim(),
     password: signupPassword.value,
-    options:  { data: { username } }
+    options:  { data: { username } },
   });
 
   btn.disabled = false;
-  btn.textContent = 'start my journal →';
+  btn.textContent = 'START MY JOURNAL →';
 
   if (error) {
     signupError.textContent = error.message;
@@ -208,35 +223,48 @@ signupForm.addEventListener('submit', async e => {
 /* ═══════════════════════════════════════════════════════
    LOGOUT
 ═══════════════════════════════════════════════════════ */
-logoutBtn.addEventListener('click', async () => {
-  await sb.auth.signOut();
-});
+logoutBtn.addEventListener('click', () => sb.auth.signOut());
 
 /* ═══════════════════════════════════════════════════════
-   NAV TABS
+   BOTTOM NAV TABS
 ═══════════════════════════════════════════════════════ */
-navTabs.forEach(tab => {
+bottomTabs.forEach(tab => {
   tab.addEventListener('click', () => {
-    navTabs.forEach(t => t.classList.remove('active'));
+    bottomTabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     activeTab = tab.dataset.tab;
-
     feedSection.classList.toggle('active', activeTab === 'feed');
     journalSection.classList.toggle('active', activeTab === 'journal');
   });
 });
 
 /* ═══════════════════════════════════════════════════════
+   COMPOSER MODAL
+═══════════════════════════════════════════════════════ */
+composeTrigger.addEventListener('click', () => {
+  composerOverlay.classList.remove('hidden');
+  postContent.focus();
+});
+
+composerClose.addEventListener('click', closeComposer);
+
+composerOverlay.addEventListener('click', e => {
+  if (e.target === composerOverlay) closeComposer();
+});
+
+function closeComposer() {
+  composerOverlay.classList.add('hidden');
+}
+
+/* ═══════════════════════════════════════════════════════
    PRIVACY TOGGLE
 ═══════════════════════════════════════════════════════ */
 isPrivateToggle.addEventListener('change', () => {
-  privacyLabelText.textContent = isPrivateToggle.checked
-    ? 'private 🔒'
-    : 'public 🌍';
+  privacyLabelText.textContent = isPrivateToggle.checked ? 'private 🔒' : 'public 🌍';
 });
 
 /* ═══════════════════════════════════════════════════════
-   IMAGE PICKER PREVIEW
+   IMAGE PREVIEW
 ═══════════════════════════════════════════════════════ */
 postImage.addEventListener('change', () => {
   const file = postImage.files[0];
@@ -269,17 +297,12 @@ submitPostBtn.addEventListener('click', async () => {
   }
 
   submitPostBtn.disabled = true;
-  submitPostBtn.textContent = 'pinning...';
+  submitPostBtn.textContent = 'PINNING...';
 
   try {
     let imageUrl = null;
+    if (selectedFile) imageUrl = await uploadImage(selectedFile);
 
-    // 1. Upload image if one was selected
-    if (selectedFile) {
-      imageUrl = await uploadImage(selectedFile);
-    }
-
-    // 2. Insert post into database
     const { error } = await sb.from(TABLE).insert({
       user_id:    currentUser.id,
       username:   currentUsername || currentUser.email,
@@ -290,7 +313,7 @@ submitPostBtn.addEventListener('click', async () => {
 
     if (error) throw error;
 
-    // 3. Reset composer
+    // Reset composer
     postContent.value = '';
     selectedFile = null;
     postImage.value = '';
@@ -298,16 +321,9 @@ submitPostBtn.addEventListener('click', async () => {
     imagePreviewWrap.classList.add('hidden');
     isPrivateToggle.checked = false;
     privacyLabelText.textContent = 'public 🌍';
+    closeComposer();
 
-    // 4. Refresh the relevant section
-    if (isPrivateToggle.checked) {
-      await loadJournal();
-    } else {
-      await loadFeed();
-      await loadJournal();
-    }
-
-    // Both reload since the toggle was already reset
+    // Reload data
     await loadFeed();
     await loadJournal();
 
@@ -315,21 +331,18 @@ submitPostBtn.addEventListener('click', async () => {
     postError.textContent = err.message || 'something went wrong';
   } finally {
     submitPostBtn.disabled = false;
-    submitPostBtn.textContent = 'pin it ✦';
+    submitPostBtn.textContent = 'PIN IT ✦';
   }
 });
 
 /* ═══════════════════════════════════════════════════════
-   IMAGE UPLOAD — stores under user_id/filename
+   IMAGE UPLOAD
 ═══════════════════════════════════════════════════════ */
 async function uploadImage(file) {
   const ext      = file.name.split('.').pop();
   const filename = `${currentUser.id}/${Date.now()}.${ext}`;
 
-  const { error } = await sb.storage
-    .from(BUCKET)
-    .upload(filename, file, { upsert: false });
-
+  const { error } = await sb.storage.from(BUCKET).upload(filename, file, { upsert: false });
   if (error) throw error;
 
   const { data } = sb.storage.from(BUCKET).getPublicUrl(filename);
@@ -340,7 +353,7 @@ async function uploadImage(file) {
    FETCH — public feed
 ═══════════════════════════════════════════════════════ */
 async function loadFeed() {
-  feedPostsEl.innerHTML = '<div class="loading-note">loading pages...</div>';
+  feedPostsEl.innerHTML = '<div class="loading-card">loading pages...</div>';
 
   const { data, error } = await sb
     .from(TABLE)
@@ -349,7 +362,7 @@ async function loadFeed() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    feedPostsEl.innerHTML = `<div class="empty-note">couldn't load posts 😕<br><small>${error.message}</small></div>`;
+    feedPostsEl.innerHTML = `<div class="empty-card">couldn't load posts 😕</div>`;
     return;
   }
 
@@ -357,11 +370,11 @@ async function loadFeed() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   FETCH — private journal (current user only)
+   FETCH — private journal
 ═══════════════════════════════════════════════════════ */
 async function loadJournal() {
   if (!currentUser) return;
-  journalPostsEl.innerHTML = '<div class="loading-note">loading your entries...</div>';
+  journalPostsEl.innerHTML = '<div class="loading-card">loading your entries...</div>';
 
   const { data, error } = await sb
     .from(TABLE)
@@ -371,7 +384,7 @@ async function loadJournal() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    journalPostsEl.innerHTML = `<div class="empty-note">couldn't load journal 😕<br><small>${error.message}</small></div>`;
+    journalPostsEl.innerHTML = `<div class="empty-card">couldn't load journal 😕</div>`;
     return;
   }
 
@@ -379,16 +392,16 @@ async function loadJournal() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   RENDER POSTS — builds cards from template
+   RENDER POSTS
 ═══════════════════════════════════════════════════════ */
 function renderPosts(container, posts, context) {
   container.innerHTML = '';
 
-  if (!posts || posts.length === 0) {
+  if (!posts?.length) {
     const msg = context === 'journal'
       ? 'nothing here yet...<br>this is your safe space ✦'
       : 'no posts yet — be the first ✦';
-    container.innerHTML = `<div class="empty-note">${msg}</div>`;
+    container.innerHTML = `<div class="empty-card">${msg}</div>`;
     return;
   }
 
@@ -399,67 +412,52 @@ function renderPosts(container, posts, context) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   BUILD A POST CARD
+   BUILD CARD
 ═══════════════════════════════════════════════════════ */
 function buildCard(post, index) {
   const clone = cardTemplate.content.cloneNode(true);
   const card  = clone.querySelector('.post-card');
 
-  // Random slight rotation — feels like paper notes scattered on a desk
-  const rotations = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2];
-  const rot = rotations[index % rotations.length];
-  card.style.setProperty('--card-rot', `${rot}deg`);
-  card.style.transform = `rotate(${rot}deg)`;
+  // Assign color theme (cycle through palette)
+  const theme = CARD_THEMES[index % CARD_THEMES.length];
+  card.classList.add(theme);
 
-  // Random tape rotation
-  const tapeRot = (Math.random() * 4 - 2).toFixed(1);
-  card.style.setProperty('--tape-rot', `${tapeRot}deg`);
-
-  // Random image tilt for photos
-  const imgRot = (Math.random() * 4 - 2).toFixed(1);
-  card.style.setProperty('--img-rot', `${imgRot}deg`);
-
-  // Populate content
-  card.querySelector('.post-username').textContent = post.username;
-  card.querySelector('.post-date').textContent     = formatDate(post.created_at);
-  card.querySelector('.post-content-text').textContent = post.content;
-
-  // Image (if any)
-  if (post.image_url) {
-    const imgWrap = card.querySelector('.post-image-wrap');
-    const img     = card.querySelector('.post-image');
-    img.src = post.image_url;
-    img.alt = `${post.username}'s photo`;
-    imgWrap.classList.remove('hidden');
+  // Short posts (≤ 80 chars) get bold uppercase treatment
+  if (post.content.trim().length <= 80) {
+    card.dataset.short = 'true';
   }
 
-  // Privacy badge
-  const badge = card.querySelector('.post-privacy-badge');
-  badge.textContent = post.is_private ? '🔒 private' : '🌍 public';
+  // Populate
+  card.querySelector('.post-content-text').textContent = post.content;
+  card.querySelector('.post-username').textContent      = `✦ ${post.username}`;
+  card.querySelector('.post-date').textContent          = formatDate(post.created_at);
 
-  // Stagger animation delay
-  card.style.animationDelay = `${index * 60}ms`;
+  // Image
+  if (post.image_url) {
+    const wrap = card.querySelector('.post-image-wrap');
+    const img  = card.querySelector('.post-image');
+    img.src = post.image_url;
+    img.alt = `photo by ${post.username}`;
+    wrap.classList.remove('hidden');
+  }
+
+  // Stagger animation
+  card.style.animationDelay = `${index * 50}ms`;
 
   return clone;
 }
 
 /* ═══════════════════════════════════════════════════════
    DATE FORMATTING — journal style
-   e.g. "Monday, March 18 · 9:41 pm"
+   e.g. "Mar 18 · 9:41 pm"
 ═══════════════════════════════════════════════════════ */
 function formatDate(isoString) {
   const d = new Date(isoString);
-  const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const months = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
-
-  const day   = days[d.getDay()];
-  const month = months[d.getMonth()];
-  const date  = d.getDate();
-  const hours = d.getHours();
-  const mins  = String(d.getMinutes()).padStart(2, '0');
-  const ampm  = hours >= 12 ? 'pm' : 'am';
-  const hour12 = hours % 12 || 12;
-
-  return `${day}, ${month} ${date} · ${hour12}:${mins} ${ampm}`;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                  'Jul','Aug','Sep','Oct','Nov','Dec'];
+  const h    = d.getHours();
+  const mins = String(d.getMinutes()).padStart(2, '0');
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const h12  = h % 12 || 12;
+  return `${months[d.getMonth()]} ${d.getDate()} · ${h12}:${mins} ${ampm}`;
 }
