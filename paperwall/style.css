@@ -801,3 +801,127 @@ body {
   .main-content { max-width: none; }
   .composer-overlay { padding-bottom: 2rem; }
 }
+
+/* ══════════════════════════════════════════════════════
+   CARD ACTIONS
+══════════════════════════════════════════════════════ */
+.card-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  min-height: 0;
+}
+
+.card-action-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 0.22rem 0.55rem;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.75;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.card-action-btn:hover { opacity: 1; background: rgba(255, 255, 255, 0.32); }
+
+.card-yellow .card-action-btn,
+.card-blue   .card-action-btn,
+.card-cream  .card-action-btn {
+  background: rgba(44, 74, 90, 0.08);
+  border-color: rgba(44, 74, 90, 0.15);
+}
+
+.card-yellow .card-action-btn:hover,
+.card-blue   .card-action-btn:hover,
+.card-cream  .card-action-btn:hover { background: rgba(44, 74, 90, 0.15); }
+
+.delete-btn:hover { background: rgba(192, 83, 74, 0.35) !important; border-color: rgba(192, 83, 74, 0.4) !important; }
+
+/* ══════════════════════════════════════════════════════
+   FRIENDS SECTION
+══════════════════════════════════════════════════════ */
+.friend-search-wrap {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.friend-search-wrap input {
+  flex: 1;
+  background: white;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.friend-search-wrap input:focus { border-color: var(--teal); }
+
+.friend-search-btn {
+  background: var(--navy);
+  color: var(--cream);
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  font-family: var(--font-bold);
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.friend-search-btn:hover { background: var(--teal); }
+
+.friend-user-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.friend-user-name {
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.follow-btn {
+  background: var(--navy);
+  color: var(--cream);
+  border: none;
+  border-radius: 100px;
+  padding: 0.35rem 0.9rem;
+  font-family: var(--font-bold);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.follow-btn:hover { background: var(--teal); }
+
+.follow-btn.following {
+  background: var(--cream-dark);
+  color: var(--text-mid);
+}
+
+.follow-btn.following:hover { background: #C0534A; color: white; }
+
+#friends-content .masonry-grid { margin-bottom: 1.5rem; }

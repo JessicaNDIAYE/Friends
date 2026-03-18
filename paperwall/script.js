@@ -28,6 +28,8 @@ let currentUser     = null;
 let currentUsername = null;
 let selectedFile    = null;
 let activeTab       = 'feed';
+let editingPostId   = null;
+let followedUsers   = JSON.parse(localStorage.getItem('paperwall_following') || '[]');
 
 /* ═══════════════════════════════════════════════════════
    DOM REFS
@@ -74,6 +76,15 @@ const sideTabsEl       = document.getElementById('side-tabs');
 
 // Card template
 const cardTemplate     = document.getElementById('post-card-template');
+
+// Composer title
+const composerTitle    = document.getElementById('composer-title');
+
+// Friends
+const friendsSection   = document.getElementById('friends-section');
+const friendSearchInput= document.getElementById('friend-search-input');
+const friendSearchBtn  = document.getElementById('friend-search-btn');
+const friendsContent   = document.getElementById('friends-content');
 
 /* ═══════════════════════════════════════════════════════
    BOOT
@@ -235,6 +246,8 @@ bottomTabs.forEach(tab => {
     activeTab = tab.dataset.tab;
     feedSection.classList.toggle('active', activeTab === 'feed');
     journalSection.classList.toggle('active', activeTab === 'journal');
+    friendsSection.classList.toggle('active', activeTab === 'friends');
+    if (activeTab === 'friends') loadFriendsFeed();
   });
 });
 
@@ -254,6 +267,9 @@ composerOverlay.addEventListener('click', e => {
 
 function closeComposer() {
   composerOverlay.classList.add('hidden');
+  editingPostId = null;
+  composerTitle.textContent = 'new page';
+  submitPostBtn.textContent = 'PIN IT ✦';
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -297,21 +313,29 @@ submitPostBtn.addEventListener('click', async () => {
   }
 
   submitPostBtn.disabled = true;
-  submitPostBtn.textContent = 'PINNING...';
+  submitPostBtn.textContent = editingPostId ? 'UPDATING...' : 'PINNING...';
 
   try {
-    let imageUrl = null;
-    if (selectedFile) imageUrl = await uploadImage(selectedFile);
-
-    const { error } = await sb.from(TABLE).insert({
-      user_id:    currentUser.id,
-      username:   currentUsername || currentUser.email,
-      content,
-      image_url:  imageUrl,
-      is_private: isPrivateToggle.checked,
-    });
-
-    if (error) throw error;
+    if (editingPostId) {
+      const updateData = { content, is_private: isPrivateToggle.checked };
+      if (selectedFile) updateData.image_url = await uploadImage(selectedFile);
+      const { error } = await sb.from(TABLE)
+        .update(updateData)
+        .eq('id', editingPostId)
+        .eq('user_id', currentUser.id);
+      if (error) throw error;
+    } else {
+      let imageUrl = null;
+      if (selectedFile) imageUrl = await uploadImage(selectedFile);
+      const { error } = await sb.from(TABLE).insert({
+        user_id:    currentUser.id,
+        username:   currentUsername || currentUser.email,
+        content,
+        image_url:  imageUrl,
+        is_private: isPrivateToggle.checked,
+      });
+      if (error) throw error;
+    }
 
     // Reset composer
     postContent.value = '';
@@ -331,7 +355,7 @@ submitPostBtn.addEventListener('click', async () => {
     postError.textContent = err.message || 'something went wrong';
   } finally {
     submitPostBtn.disabled = false;
-    submitPostBtn.textContent = 'PIN IT ✦';
+    submitPostBtn.textContent = editingPostId ? 'UPDATE ✦' : 'PIN IT ✦';
   }
 });
 
@@ -406,7 +430,7 @@ function renderPosts(container, posts, context) {
   }
 
   posts.forEach((post, i) => {
-    const card = buildCard(post, i);
+    const card = buildCard(post, i, context);
     container.appendChild(card);
   });
 }
@@ -414,7 +438,7 @@ function renderPosts(container, posts, context) {
 /* ═══════════════════════════════════════════════════════
    BUILD CARD
 ═══════════════════════════════════════════════════════ */
-function buildCard(post, index) {
+function buildCard(post, index, context = 'feed') {
   const clone = cardTemplate.content.cloneNode(true);
   const card  = clone.querySelector('.post-card');
 
@@ -441,6 +465,31 @@ function buildCard(post, index) {
     wrap.classList.remove('hidden');
   }
 
+  // Action buttons
+  const actions = card.querySelector('.card-actions');
+  const isOwn   = currentUser && post.user_id === currentUser.id;
+
+  if (isOwn) {
+    const editBtn = document.createElement('button');
+    editBtn.className = 'card-action-btn edit-btn';
+    editBtn.textContent = '✏️ edit';
+    editBtn.addEventListener('click', e => { e.stopPropagation(); startEditPost(post); });
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'card-action-btn delete-btn';
+    deleteBtn.textContent = '🗑️ delete';
+    deleteBtn.addEventListener('click', e => { e.stopPropagation(); deletePost(post.id); });
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+  } else if (context === 'search' || context === 'friends') {
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'card-action-btn save-btn';
+    saveBtn.textContent = '📌 save';
+    saveBtn.addEventListener('click', e => { e.stopPropagation(); saveToJournal(post, saveBtn); });
+    actions.appendChild(saveBtn);
+  }
+
   // Stagger animation
   card.style.animationDelay = `${index * 50}ms`;
 
@@ -461,3 +510,157 @@ function formatDate(isoString) {
   const h12  = h % 12 || 12;
   return `${months[d.getMonth()]} ${d.getDate()} · ${h12}:${mins} ${ampm}`;
 }
+
+/* ═══════════════════════════════════════════════════════
+   EDIT POST
+═══════════════════════════════════════════════════════ */
+function startEditPost(post) {
+  editingPostId = post.id;
+  postContent.value = post.content;
+  isPrivateToggle.checked = post.is_private;
+  privacyLabelText.textContent = post.is_private ? 'private 🔒' : 'public 🌍';
+  composerTitle.textContent = 'edit page';
+  submitPostBtn.textContent = 'UPDATE ✦';
+  if (post.image_url) {
+    imagePreview.src = post.image_url;
+    imagePreviewWrap.classList.remove('hidden');
+  }
+  composerOverlay.classList.remove('hidden');
+  postContent.focus();
+}
+
+/* ═══════════════════════════════════════════════════════
+   DELETE POST
+═══════════════════════════════════════════════════════ */
+async function deletePost(id) {
+  if (!confirm('delete this post? this cannot be undone.')) return;
+  const { error } = await sb.from(TABLE).delete().eq('id', id).eq('user_id', currentUser.id);
+  if (!error) {
+    await loadFeed();
+    await loadJournal();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SAVE TO PRIVATE JOURNAL
+═══════════════════════════════════════════════════════ */
+async function saveToJournal(post, btn) {
+  btn.disabled = true;
+  btn.textContent = 'saving...';
+  const { error } = await sb.from(TABLE).insert({
+    user_id:    currentUser.id,
+    username:   currentUsername || currentUser.email,
+    content:    `saved from ✦ ${post.username}:\n\n${post.content}`,
+    image_url:  post.image_url || null,
+    is_private: true,
+  });
+  if (!error) {
+    btn.textContent = '✦ saved!';
+    await loadJournal();
+  } else {
+    btn.disabled = false;
+    btn.textContent = '📌 save';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   FOLLOW / UNFOLLOW
+═══════════════════════════════════════════════════════ */
+function toggleFollow(username) {
+  const idx = followedUsers.indexOf(username);
+  if (idx === -1) followedUsers.push(username);
+  else followedUsers.splice(idx, 1);
+  localStorage.setItem('paperwall_following', JSON.stringify(followedUsers));
+}
+
+/* ═══════════════════════════════════════════════════════
+   FRIENDS — load followed users' posts
+═══════════════════════════════════════════════════════ */
+async function loadFriendsFeed() {
+  if (!followedUsers.length) {
+    friendsContent.innerHTML = `<div class="empty-card">search for someone and follow them<br>their posts will appear here ✦</div>`;
+    return;
+  }
+  friendsContent.innerHTML = '<div class="loading-card">loading...</div>';
+  const { data, error } = await sb
+    .from(TABLE)
+    .select('*')
+    .in('username', followedUsers)
+    .eq('is_private', false)
+    .order('created_at', { ascending: false });
+  if (error) {
+    friendsContent.innerHTML = `<div class="empty-card">couldn't load posts 😕</div>`;
+    return;
+  }
+  if (!data?.length) {
+    friendsContent.innerHTML = `<div class="empty-card">no posts from people you follow yet ✦</div>`;
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'masonry-grid';
+  data.forEach((post, i) => grid.appendChild(buildCard(post, i, 'friends')));
+  friendsContent.innerHTML = '';
+  friendsContent.appendChild(grid);
+}
+
+/* ═══════════════════════════════════════════════════════
+   FRIENDS — search by username
+═══════════════════════════════════════════════════════ */
+async function searchFriends() {
+  const query = friendSearchInput.value.trim();
+  if (!query) { loadFriendsFeed(); return; }
+
+  friendsContent.innerHTML = '<div class="loading-card">searching...</div>';
+  const { data, error } = await sb
+    .from(TABLE)
+    .select('*')
+    .ilike('username', `%${query}%`)
+    .eq('is_private', false)
+    .order('created_at', { ascending: false });
+
+  if (error || !data?.length) {
+    friendsContent.innerHTML = `<div class="empty-card">no one found for "${query}" ✦</div>`;
+    return;
+  }
+
+  // Group posts by username
+  const byUser = {};
+  data.forEach(post => {
+    if (!byUser[post.username]) byUser[post.username] = [];
+    byUser[post.username].push(post);
+  });
+
+  friendsContent.innerHTML = '';
+  Object.entries(byUser).forEach(([username, posts]) => {
+    const isFollowing = followedUsers.includes(username);
+
+    const header = document.createElement('div');
+    header.className = 'friend-user-header';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'friend-user-name';
+    nameSpan.textContent = `✦ ${username}`;
+
+    const followBtn = document.createElement('button');
+    followBtn.className = 'follow-btn' + (isFollowing ? ' following' : '');
+    followBtn.textContent = isFollowing ? 'following ✓' : 'follow +';
+    followBtn.addEventListener('click', () => {
+      toggleFollow(username);
+      const nowFollowing = followedUsers.includes(username);
+      followBtn.textContent = nowFollowing ? 'following ✓' : 'follow +';
+      followBtn.classList.toggle('following', nowFollowing);
+    });
+
+    header.appendChild(nameSpan);
+    header.appendChild(followBtn);
+    friendsContent.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'masonry-grid';
+    posts.slice(0, 4).forEach((post, i) => grid.appendChild(buildCard(post, i, 'search')));
+    friendsContent.appendChild(grid);
+  });
+}
+
+friendSearchBtn.addEventListener('click', searchFriends);
+friendSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchFriends(); });
