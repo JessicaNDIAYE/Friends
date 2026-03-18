@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PaperWall ✦ Your Digital Journal</title>
+
+  <!-- Fonts: handwritten + clean -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       AUTH SCREEN
+  ═══════════════════════════════════════════ -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-paper">
+      <div class="auth-header">
+        <h1 class="logo">PaperWall</h1>
+        <p class="logo-sub">your little corner of the internet ✦</p>
+      </div>
+
+      <!-- Tabs: Login / Sign up -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Sign in</button>
+        <button class="auth-tab" data-tab="signup">Sign up</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form active">
+        <div class="field">
+          <label>email</label>
+          <input type="email" id="login-email" placeholder="hello@example.com" required />
+        </div>
+        <div class="field">
+          <label>password</label>
+          <input type="password" id="login-password" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn-primary">open my journal →</button>
+        <p id="login-error" class="form-error"></p>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="signup-form" class="auth-form">
+        <div class="field">
+          <label>username</label>
+          <input type="text" id="signup-username" placeholder="how should we call you?" required />
+        </div>
+        <div class="field">
+          <label>email</label>
+          <input type="email" id="signup-email" placeholder="hello@example.com" required />
+        </div>
+        <div class="field">
+          <label>password</label>
+          <input type="password" id="signup-password" placeholder="••••••••" required minlength="6" />
+        </div>
+        <button type="submit" class="btn-primary">start my journal →</button>
+        <p id="signup-error" class="form-error"></p>
+        <p id="signup-success" class="form-success"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN APP (shown after login)
+  ═══════════════════════════════════════════ -->
+  <div id="app" class="app hidden">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <span class="topbar-logo">PaperWall</span>
+      <div class="topbar-right">
+        <span id="topbar-username" class="topbar-user"></span>
+        <button id="logout-btn" class="btn-ghost">sign out</button>
+      </div>
+    </header>
+
+    <!-- Navigation tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="feed">🌍 Feed</button>
+      <button class="nav-tab" data-tab="journal">🔒 My Journal</button>
+    </nav>
+
+    <!-- Main content area -->
+    <main class="main-content">
+
+      <!-- New Post composer -->
+      <section class="composer-wrap">
+        <div class="composer-paper">
+          <div class="composer-header">
+            <span class="composer-title">new page</span>
+            <div class="privacy-toggle">
+              <label class="toggle-label">
+                <input type="checkbox" id="is-private-toggle" />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+                <span id="privacy-label-text">public 🌍</span>
+              </label>
+            </div>
+          </div>
+
+          <textarea
+            id="post-content"
+            class="post-textarea"
+            placeholder="Today I felt..."
+            maxlength="1000"
+          ></textarea>
+
+          <div class="composer-footer">
+            <label class="image-upload-label" for="post-image">
+              <span class="upload-icon">📎</span> attach a photo
+              <input type="file" id="post-image" accept="image/*" hidden />
+            </label>
+            <div id="image-preview-wrap" class="image-preview-wrap hidden">
+              <img id="image-preview" src="" alt="preview" />
+              <button id="remove-image" class="remove-img-btn">✕</button>
+            </div>
+            <button id="submit-post" class="btn-primary">pin it ✦</button>
+          </div>
+          <p id="post-error" class="form-error"></p>
+        </div>
+      </section>
+
+      <!-- Feed section -->
+      <section id="feed-section" class="posts-section active">
+        <div class="section-header">
+          <h2 class="section-title">what everyone's feeling</h2>
+        </div>
+        <div id="feed-posts" class="posts-grid">
+          <div class="loading-note">loading pages...</div>
+        </div>
+      </section>
+
+      <!-- Journal section -->
+      <section id="journal-section" class="posts-section">
+        <div class="section-header">
+          <h2 class="section-title">my private pages</h2>
+        </div>
+        <div id="journal-posts" class="posts-grid">
+          <div class="loading-note">loading your entries...</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       POST CARD TEMPLATE (cloned by JS)
+  ═══════════════════════════════════════════ -->
+  <template id="post-card-template">
+    <article class="post-card">
+      <div class="post-card-inner">
+        <header class="post-card-header">
+          <span class="post-username"></span>
+          <span class="post-date"></span>
+        </header>
+        <p class="post-content-text"></p>
+        <div class="post-image-wrap hidden">
+          <img class="post-image" src="" alt="post image" />
+        </div>
+        <div class="post-footer">
+          <span class="post-privacy-badge"></span>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <!-- Supabase JS SDK (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
+</body>
+</html>
