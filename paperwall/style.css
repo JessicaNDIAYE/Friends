@@ -927,6 +927,198 @@ body {
 #friends-content .masonry-grid { margin-bottom: 1.5rem; }
 
 /* ══════════════════════════════════════════════════════
+   PROFILE SECTION
+══════════════════════════════════════════════════════ */
+.profile-avatar-block {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  background: var(--navy);
+  color: var(--yellow);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-bold);
+  font-size: 1.5rem;
+  font-weight: 900;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.profile-info { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.profile-name {
+  font-family: var(--font-hand);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.1;
+}
+
+.profile-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.profile-stats {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  background: white;
+  border-radius: 12px;
+  border: 1.5px solid var(--cream-dark);
+  overflow: hidden;
+}
+
+.profile-stat {
+  flex: 1;
+  text-align: center;
+  padding: 0.8rem 0.5rem;
+  border-right: 1px solid var(--cream-dark);
+}
+
+.profile-stat:last-child { border-right: none; }
+
+.stat-number {
+  display: block;
+  font-family: var(--font-bold);
+  font-weight: 900;
+  font-size: 1.4rem;
+  color: var(--navy);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-top: 0.2rem;
+  display: block;
+}
+
+.profile-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.85rem;
+  border: 1.5px solid var(--cream-dark);
+}
+
+.profile-card-title {
+  font-family: var(--font-bold);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.profile-field-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.profile-field-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.profile-field-row input:focus { border-color: var(--teal); }
+
+.btn-pill-sm {
+  background: var(--navy);
+  color: var(--cream);
+  border: none;
+  border-radius: 100px;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-bold);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-pill-sm:hover { background: var(--teal); }
+.btn-pill-sm:disabled { opacity: 0.5; cursor: default; }
+
+.profile-following-list { display: flex; flex-direction: column; }
+
+.profile-follow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--cream-dark);
+}
+
+.profile-follow-row:last-child { border-bottom: none; }
+
+.profile-follow-username {
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  color: var(--navy);
+}
+
+.btn-unfollow {
+  background: none;
+  border: 1px solid var(--cream-dark);
+  border-radius: 100px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: all 0.2s;
+}
+
+.btn-unfollow:hover { background: #C0534A; border-color: #C0534A; color: white; }
+
+.profile-danger { border-color: rgba(192, 83, 74, 0.25); }
+
+.profile-danger-text {
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  margin-bottom: 0.9rem;
+  line-height: 1.55;
+}
+
+.btn-danger {
+  background: none;
+  border: 1.5px solid rgba(192, 83, 74, 0.45);
+  border-radius: 100px;
+  padding: 0.5rem 1.2rem;
+  font-family: var(--font-bold);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #C0534A;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover { background: #C0534A; color: white; border-color: #C0534A; }
+.btn-danger:disabled { opacity: 0.5; cursor: default; }
+
+/* ══════════════════════════════════════════════════════
    SIDE TABS — month tabs (now clickable)
 ══════════════════════════════════════════════════════ */
 .side-tab {

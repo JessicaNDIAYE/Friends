@@ -133,6 +133,52 @@
         <div id="friends-content"></div>
       </section>
 
+      <!-- Profile section -->
+      <section id="profile-section" class="posts-section">
+        <div class="profile-avatar-block">
+          <div class="profile-avatar">✦</div>
+          <div class="profile-info">
+            <span class="profile-name"></span>
+            <span class="profile-email"></span>
+          </div>
+        </div>
+
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span class="stat-number" id="profile-stat-public">—</span>
+            <span class="stat-label">public</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-number" id="profile-stat-private">—</span>
+            <span class="stat-label">journal</span>
+          </div>
+          <div class="profile-stat">
+            <span class="stat-number" id="profile-stat-following">—</span>
+            <span class="stat-label">following</span>
+          </div>
+        </div>
+
+        <div class="profile-card">
+          <h3 class="profile-card-title">change username</h3>
+          <div class="profile-field-row">
+            <input type="text" id="profile-username-input" placeholder="new username" autocomplete="off" />
+            <button id="profile-username-btn" class="btn-pill-sm">save</button>
+          </div>
+          <p id="profile-username-msg" class="hidden" style="font-size:0.83rem;margin-top:0.5rem"></p>
+        </div>
+
+        <div class="profile-card">
+          <h3 class="profile-card-title">following <span id="following-count">0</span></h3>
+          <div id="profile-following-list" class="profile-following-list"></div>
+        </div>
+
+        <div class="profile-card profile-danger">
+          <h3 class="profile-card-title">danger zone</h3>
+          <p class="profile-danger-text">deleting your account will permanently remove all your posts. this cannot be undone.</p>
+          <button id="delete-account-btn" class="btn-danger">delete my account</button>
+        </div>
+      </section>
+
     </main>
 
     <!-- ── Bottom navigation (GoodNotes-style) ── -->
@@ -152,6 +198,10 @@
       <button class="bottom-tab" data-tab="journal">
         <span class="btab-icon">🔒</span>
         <span class="btab-label">JOURNAL</span>
+      </button>
+      <button class="bottom-tab" data-tab="profile">
+        <span class="btab-icon">👤</span>
+        <span class="btab-label">PROFILE</span>
       </button>
     </nav>
 

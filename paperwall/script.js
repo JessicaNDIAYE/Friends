@@ -92,6 +92,9 @@ const friendSearchInput= document.getElementById('friend-search-input');
 const friendSearchBtn  = document.getElementById('friend-search-btn');
 const friendsContent   = document.getElementById('friends-content');
 
+// Profile
+const profileSection   = document.getElementById('profile-section');
+
 /* ═══════════════════════════════════════════════════════
    BOOT
 ═══════════════════════════════════════════════════════ */
@@ -379,8 +382,10 @@ bottomTabs.forEach(tab => {
     feedSection.classList.toggle('active', activeTab === 'feed');
     journalSection.classList.toggle('active', activeTab === 'journal');
     friendsSection.classList.toggle('active', activeTab === 'friends');
+    profileSection.classList.toggle('active', activeTab === 'profile');
     if (activeTab === 'journal') loadJournal();
     if (activeTab === 'friends') loadFriendsFeed();
+    if (activeTab === 'profile') loadProfileSection();
   });
 });
 
@@ -923,3 +928,113 @@ async function searchFriends() {
 
 friendSearchBtn.addEventListener('click', searchFriends);
 friendSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchFriends(); });
+
+/* ═══════════════════════════════════════════════════════
+   PROFILE SECTION
+═══════════════════════════════════════════════════════ */
+async function loadProfileSection() {
+  // Avatar initial
+  const initial = (currentUsername || currentUser.email || '?')[0].toUpperCase();
+  profileSection.querySelector('.profile-avatar').textContent = initial;
+  profileSection.querySelector('.profile-name').textContent   = '@' + (currentUsername || currentUser.email);
+  profileSection.querySelector('.profile-email').textContent  = currentUser.email;
+  document.getElementById('profile-username-input').placeholder = currentUsername || 'choose a username';
+
+  // Post counts from DB
+  const [{ count: pubCount }, { count: privCount }] = await Promise.all([
+    sb.from(TABLE).select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('is_private', false),
+    sb.from(TABLE).select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).eq('is_private', true),
+  ]);
+  document.getElementById('profile-stat-public').textContent    = pubCount ?? 0;
+  document.getElementById('profile-stat-private').textContent   = privCount ?? 0;
+  document.getElementById('profile-stat-following').textContent = followedUsers.length;
+
+  renderProfileFollowing();
+}
+
+function renderProfileFollowing() {
+  const list = document.getElementById('profile-following-list');
+  document.getElementById('following-count').textContent = followedUsers.length;
+  document.getElementById('profile-stat-following').textContent = followedUsers.length;
+
+  if (!followedUsers.length) {
+    list.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted)">you\'re not following anyone yet ✦</p>';
+    return;
+  }
+
+  list.innerHTML = '';
+  [...followedUsers].forEach(username => {
+    const row = document.createElement('div');
+    row.className = 'profile-follow-row';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'profile-follow-username';
+    nameSpan.textContent = '✦ ' + username;
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-unfollow';
+    btn.textContent = 'unfollow';
+    btn.addEventListener('click', () => {
+      toggleFollow(username);
+      renderProfileFollowing();
+    });
+
+    row.appendChild(nameSpan);
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+/* ── Change username ──────────────────────────────────── */
+document.getElementById('profile-username-btn').addEventListener('click', async () => {
+  const newUsername = document.getElementById('profile-username-input').value.trim();
+  const msg = document.getElementById('profile-username-msg');
+  const btn = document.getElementById('profile-username-btn');
+  if (!newUsername || newUsername === currentUsername) return;
+
+  btn.disabled = true;
+  btn.textContent = 'saving...';
+  msg.className = 'hidden';
+
+  const { error: authErr } = await sb.auth.updateUser({ data: { username: newUsername } });
+  if (authErr) {
+    msg.textContent = authErr.message;
+    msg.style.color = '#C0534A';
+    msg.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'save';
+    return;
+  }
+
+  // Update all posts with old username
+  await sb.from(TABLE).update({ username: newUsername }).eq('user_id', currentUser.id);
+  cachedJournalPosts = cachedJournalPosts.map(p => ({ ...p, username: newUsername }));
+  cachedFeedPosts    = cachedFeedPosts.map(p => p.user_id === currentUser.id ? { ...p, username: newUsername } : p);
+
+  currentUsername = newUsername;
+  topbarUsername.textContent = newUsername;
+  profileSection.querySelector('.profile-name').textContent = '@' + newUsername;
+  document.getElementById('profile-username-input').value       = '';
+  document.getElementById('profile-username-input').placeholder = newUsername;
+
+  msg.textContent  = 'username updated ✦';
+  msg.style.color  = 'var(--teal)';
+  msg.classList.remove('hidden');
+  btn.disabled = false;
+  btn.textContent = 'save';
+  setTimeout(() => msg.classList.add('hidden'), 3000);
+});
+
+/* ── Delete account ───────────────────────────────────── */
+document.getElementById('delete-account-btn').addEventListener('click', async () => {
+  const confirmed = confirm(
+    'are you sure?\n\nthis will permanently delete all your posts.\nthis cannot be undone.'
+  );
+  if (!confirmed) return;
+
+  document.getElementById('delete-account-btn').textContent = 'deleting...';
+  document.getElementById('delete-account-btn').disabled = true;
+
+  await sb.from(TABLE).delete().eq('user_id', currentUser.id);
+  await sb.auth.signOut();
+});
