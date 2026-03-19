@@ -95,8 +95,15 @@
 
       <!-- Feed section -->
       <section id="feed-section" class="posts-section active">
-        <p class="section-tagline">what everyone's feeling</p>
-        <div id="feed-posts" class="masonry-grid">
+        <div class="journal-topbar">
+          <p class="section-tagline">what everyone's feeling</p>
+          <div class="journal-quick-nav">
+            <button class="qnav-btn" id="feed-qnav-today">today</button>
+            <button class="qnav-btn" id="feed-qnav-yesterday">yesterday</button>
+            <button class="qnav-btn qnav-all hidden" id="feed-qnav-all">all posts</button>
+          </div>
+        </div>
+        <div id="feed-posts">
           <div class="loading-card">loading pages...</div>
         </div>
       </section>

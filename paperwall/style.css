@@ -1090,7 +1090,8 @@ body {
 /* ══════════════════════════════════════════════════════
    JOURNAL DAY HEADERS
 ══════════════════════════════════════════════════════ */
-#journal-posts {
+#journal-posts,
+#feed-posts {
   display: flex;
   flex-direction: column;
 }
