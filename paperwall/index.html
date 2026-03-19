@@ -103,7 +103,14 @@
 
       <!-- Journal section -->
       <section id="journal-section" class="posts-section">
-        <p class="section-tagline">my private pages</p>
+        <div class="journal-topbar">
+          <p class="section-tagline">my private pages</p>
+          <div class="journal-quick-nav">
+            <button class="qnav-btn" id="qnav-today">today</button>
+            <button class="qnav-btn" id="qnav-yesterday">yesterday</button>
+            <button class="qnav-btn qnav-all hidden" id="qnav-all">all notes</button>
+          </div>
+        </div>
         <div id="journal-posts">
           <div class="loading-card">loading your entries...</div>
         </div>
@@ -188,6 +195,9 @@
 
       </div>
     </div>
+
+    <!-- ── Calendar popup ── -->
+    <div id="calendar-popup" class="calendar-popup hidden"></div>
 
   </div><!-- /app -->
 

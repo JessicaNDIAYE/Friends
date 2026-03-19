@@ -32,6 +32,8 @@ let editingPostId      = null;
 let followedUsers      = JSON.parse(localStorage.getItem('paperwall_following') || '[]');
 let cachedJournalPosts = [];
 let activeJournalDay   = null;
+let calOpenMonth       = null;   // month index (0–11) whose calendar is open
+let calYear            = new Date().getFullYear();
 
 /* ═══════════════════════════════════════════════════════
    DOM REFS
@@ -128,56 +130,142 @@ function initHeader() {
     `${months[now.getMonth()]} ${now.getDate()}`;
 }
 
-/* ─── Build right-side day tabs (from journal entries) ── */
+/* ─── Month side tabs (click → calendar popup) ──────── */
 function initSideTabs() {
-  sideTabsEl.innerHTML = ''; // populated by buildDayTabs after journal loads
+  const currentMonth = new Date().getMonth();
+  MONTHS.forEach((m, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'side-tab' + (i === currentMonth ? ' current' : '');
+    tab.textContent = m;
+    tab.addEventListener('click', e => { e.stopPropagation(); toggleCalendar(i, tab); });
+    sideTabsEl.appendChild(tab);
+  });
 }
 
+/* ─── Day key helper ─────────────────────────────────── */
 function dayKey(date) {
   const d = new Date(date);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function buildDayTabs(posts) {
-  sideTabsEl.innerHTML = '';
-  if (!posts?.length) return;
+/* ─── Calendar popup ─────────────────────────────────── */
+function toggleCalendar(monthIndex, tabEl) {
+  const popup = document.getElementById('calendar-popup');
+  if (calOpenMonth === monthIndex && !popup.classList.contains('hidden')) {
+    closeCalendar(); return;
+  }
+  calOpenMonth = monthIndex;
+  calYear      = new Date().getFullYear();
 
-  // Collect unique days
-  const seen = new Map();
-  posts.forEach(post => {
-    const k = dayKey(post.created_at);
-    if (!seen.has(k)) seen.set(k, new Date(post.created_at));
+  // Position popup vertically near the clicked tab
+  const rect = tabEl.getBoundingClientRect();
+  popup.style.top = `${Math.min(Math.max(rect.top, 60), window.innerHeight - 320)}px`;
+
+  renderCalendar();
+  popup.classList.remove('hidden');
+
+  // Highlight the active month tab
+  document.querySelectorAll('.side-tab').forEach((t, i) => {
+    t.classList.toggle('cal-open', i === monthIndex);
+  });
+}
+
+function closeCalendar() {
+  document.getElementById('calendar-popup').classList.add('hidden');
+  document.querySelectorAll('.side-tab').forEach(t => t.classList.remove('cal-open'));
+  calOpenMonth = null;
+}
+
+function renderCalendar() {
+  const popup = document.getElementById('calendar-popup');
+  const MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+
+  // Days in this month that have journal entries
+  const daysWithNotes = new Set(
+    cachedJournalPosts
+      .filter(p => {
+        const d = new Date(p.created_at);
+        return d.getMonth() === calOpenMonth && d.getFullYear() === calYear;
+      })
+      .map(p => new Date(p.created_at).getDate())
+  );
+
+  const firstWeekday = (new Date(calYear, calOpenMonth, 1).getDay() + 6) % 7; // Mon=0
+  const daysInMonth  = new Date(calYear, calOpenMonth + 1, 0).getDate();
+  const today        = new Date();
+  const isThisMonth  = today.getMonth() === calOpenMonth && today.getFullYear() === calYear;
+
+  // Build grid cells
+  let cells = '';
+  for (let i = 0; i < firstWeekday; i++) cells += `<span class="cal-cell empty"></span>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const k     = `${calYear}-${String(calOpenMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let   cls   = 'cal-cell';
+    if (daysWithNotes.has(d))      cls += ' has-notes';
+    if (isThisMonth && d === today.getDate()) cls += ' today';
+    if (k === activeJournalDay)    cls += ' selected';
+    cells += `<span class="${cls}" data-key="${k}">${d}</span>`;
+  }
+
+  popup.innerHTML = `
+    <div class="cal-header">
+      <button class="cal-nav" id="cal-prev">‹</button>
+      <span class="cal-title">${MONTH_NAMES[calOpenMonth]} ${calYear}</span>
+      <button class="cal-nav" id="cal-next">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+    </div>
+    <div class="cal-days">${cells}</div>
+  `;
+
+  popup.querySelector('#cal-prev').addEventListener('click', e => {
+    e.stopPropagation();
+    calOpenMonth--; if (calOpenMonth < 0)  { calOpenMonth = 11; calYear--; }
+    document.querySelectorAll('.side-tab').forEach((t, i) => {
+      t.classList.toggle('cal-open', i === calOpenMonth && calYear === new Date().getFullYear());
+      t.classList.toggle('current', i === new Date().getMonth() && calYear === new Date().getFullYear());
+    });
+    renderCalendar();
+  });
+  popup.querySelector('#cal-next').addEventListener('click', e => {
+    e.stopPropagation();
+    calOpenMonth++; if (calOpenMonth > 11) { calOpenMonth = 0;  calYear++; }
+    document.querySelectorAll('.side-tab').forEach((t, i) => {
+      t.classList.toggle('cal-open', i === calOpenMonth && calYear === new Date().getFullYear());
+      t.classList.toggle('current', i === new Date().getMonth() && calYear === new Date().getFullYear());
+    });
+    renderCalendar();
   });
 
-  const todayKey = dayKey(new Date());
-
-  [...seen.entries()]
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .forEach(([k, d]) => {
-      const tab = document.createElement('div');
-      tab.className = 'side-tab day-tab';
-      tab.dataset.dayKey = k;
-      tab.textContent   = `${d.getDate()} ${MONTHS[d.getMonth()]}`;
-      if (k === todayKey)        tab.classList.add('current');
-      if (k === activeJournalDay) tab.classList.add('active-day');
-
-      tab.addEventListener('click', () => {
-        // Switch to journal if needed
-        if (activeTab !== 'journal') {
-          const journalBtn = document.querySelector('.bottom-tab[data-tab="journal"]');
-          bottomTabs.forEach(t => t.classList.remove('active'));
-          journalBtn.classList.add('active');
-          activeTab = 'journal';
-          feedSection.classList.remove('active');
-          journalSection.classList.add('active');
-          friendsSection.classList.remove('active');
-        }
-        filterJournalByDay(k, tab);
-      });
-
-      sideTabsEl.appendChild(tab);
+  popup.querySelectorAll('.cal-cell:not(.empty)').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const k = el.dataset.key;
+      // Switch to journal if needed
+      if (activeTab !== 'journal') {
+        const btn = document.querySelector('.bottom-tab[data-tab="journal"]');
+        bottomTabs.forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = 'journal';
+        feedSection.classList.remove('active');
+        journalSection.classList.add('active');
+        friendsSection.classList.remove('active');
+      }
+      filterJournalByDay(k);
+      renderCalendar(); // re-render to update selected highlight
     });
+  });
 }
+
+// Close calendar on outside click
+document.addEventListener('click', e => {
+  const popup = document.getElementById('calendar-popup');
+  if (!popup.classList.contains('hidden') && !popup.contains(e.target)) {
+    closeCalendar();
+  }
+});
 
 /* ═══════════════════════════════════════════════════════
    SHOW / HIDE SCREENS
@@ -456,7 +544,6 @@ async function loadJournal() {
   }
 
   cachedJournalPosts = data || [];
-  buildDayTabs(cachedJournalPosts);
 
   if (activeJournalDay) {
     const filtered = cachedJournalPosts.filter(p => dayKey(p.created_at) === activeJournalDay);
@@ -523,21 +610,39 @@ function renderJournalByDay(posts) {
 /* ═══════════════════════════════════════════════════════
    FILTER JOURNAL BY DAY
 ═══════════════════════════════════════════════════════ */
-function filterJournalByDay(k, tabEl) {
+function filterJournalByDay(k) {
+  const qnavAll = document.getElementById('qnav-all');
   // Toggle off if same day clicked again
   if (activeJournalDay === k) {
     activeJournalDay = null;
-    document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active-day'));
+    if (qnavAll) qnavAll.classList.add('hidden');
     renderJournalByDay(cachedJournalPosts);
     return;
   }
   activeJournalDay = k;
-  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active-day'));
-  if (tabEl) tabEl.classList.add('active-day');
-
+  if (qnavAll) qnavAll.classList.remove('hidden');
   const filtered = cachedJournalPosts.filter(p => dayKey(p.created_at) === k);
   renderJournalByDay(filtered);
 }
+
+/* ── Quick nav: today / yesterday / all ─────────────── */
+document.getElementById('qnav-today').addEventListener('click', () => {
+  filterJournalByDay(dayKey(new Date()));
+  if (activeTab !== 'journal') document.querySelector('.bottom-tab[data-tab="journal"]').click();
+});
+
+document.getElementById('qnav-yesterday').addEventListener('click', () => {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  filterJournalByDay(dayKey(d));
+  if (activeTab !== 'journal') document.querySelector('.bottom-tab[data-tab="journal"]').click();
+});
+
+document.getElementById('qnav-all').addEventListener('click', () => {
+  activeJournalDay = null;
+  document.getElementById('qnav-all').classList.add('hidden');
+  renderJournalByDay(cachedJournalPosts);
+  closeCalendar();
+});
 
 /* ═══════════════════════════════════════════════════════
    RENDER POSTS

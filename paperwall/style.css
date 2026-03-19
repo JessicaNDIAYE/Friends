@@ -339,7 +339,7 @@ body {
   border-bottom: 1px solid rgba(140, 120, 95, 0.15);
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
   transition: background 0.2s;
 }
@@ -927,24 +927,165 @@ body {
 #friends-content .masonry-grid { margin-bottom: 1.5rem; }
 
 /* ══════════════════════════════════════════════════════
-   SIDE TABS — day navigation
+   SIDE TABS — month tabs (now clickable)
 ══════════════════════════════════════════════════════ */
-.day-tab {
+.side-tab {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
-  font-size: 0.5rem;
-  letter-spacing: 0.04em;
 }
 
-.day-tab:hover {
-  background: var(--teal-mid);
+.side-tab:hover:not(.current) {
+  background: var(--teal);
   color: var(--cream);
 }
 
-.day-tab.active-day {
+.side-tab.cal-open {
   background: var(--yellow);
   color: var(--navy-deep);
 }
+
+/* ══════════════════════════════════════════════════════
+   CALENDAR POPUP
+══════════════════════════════════════════════════════ */
+.calendar-popup {
+  position: fixed;
+  right: var(--sidetab-w);
+  width: 224px;
+  z-index: 250;
+  background: white;
+  border-radius: 14px 0 0 14px;
+  box-shadow: -6px 4px 28px rgba(44, 74, 90, 0.22);
+  border: 1.5px solid var(--cream-dark);
+  border-right: none;
+  padding: 0.75rem;
+  animation: calSlideIn 0.18s ease both;
+}
+
+@keyframes calSlideIn {
+  from { transform: translateX(16px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.cal-title {
+  font-family: var(--font-bold);
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.cal-nav {
+  background: var(--cream);
+  border: none;
+  border-radius: 6px;
+  width: 24px; height: 24px;
+  font-size: 1rem;
+  color: var(--navy);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.cal-nav:hover { background: var(--cream-dark); }
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 0.25rem;
+}
+.cal-weekdays span {
+  text-align: center;
+  font-family: var(--font-bold);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0.15rem 0;
+}
+
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-mid);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cal-cell:hover:not(.empty) { background: var(--cream); color: var(--navy); }
+.cal-cell.empty { cursor: default; }
+
+/* Dot under days that have notes */
+.cal-cell.has-notes::after {
+  content: '';
+  position: absolute;
+  bottom: 2px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+.cal-cell.today  { font-weight: 900; color: var(--teal); }
+
+.cal-cell.selected {
+  background: var(--navy);
+  color: var(--cream);
+}
+.cal-cell.selected::after { background: var(--yellow); }
+
+/* ── Journal quick nav (today / yesterday / all) ───── */
+.journal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.journal-topbar .section-tagline { margin-bottom: 0; }
+
+.journal-quick-nav {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.qnav-btn {
+  background: white;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 100px;
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-bold);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.qnav-btn:hover       { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+.qnav-btn.qnav-all    { background: var(--yellow); color: var(--navy-deep); border-color: var(--yellow); }
 
 /* ══════════════════════════════════════════════════════
    JOURNAL DAY HEADERS
