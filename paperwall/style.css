@@ -925,3 +925,72 @@ body {
 .follow-btn.following:hover { background: #C0534A; color: white; }
 
 #friends-content .masonry-grid { margin-bottom: 1.5rem; }
+
+/* ══════════════════════════════════════════════════════
+   SIDE TABS — day navigation
+══════════════════════════════════════════════════════ */
+.day-tab {
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-size: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+.day-tab:hover {
+  background: var(--teal-mid);
+  color: var(--cream);
+}
+
+.day-tab.active-day {
+  background: var(--yellow);
+  color: var(--navy-deep);
+}
+
+/* ══════════════════════════════════════════════════════
+   JOURNAL DAY HEADERS
+══════════════════════════════════════════════════════ */
+#journal-posts {
+  display: flex;
+  flex-direction: column;
+}
+
+.journal-day-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin: 1.5rem 0 0.65rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid var(--cream-dark);
+}
+
+.journal-day-header:first-child { margin-top: 0.25rem; }
+
+.jdh-day {
+  font-family: var(--font-bold);
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+
+.journal-day-header.today .jdh-day { color: var(--teal); }
+
+.jdh-date {
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.jdh-count {
+  margin-left: auto;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--cream-dark);
+  border-radius: 100px;
+  padding: 0.1rem 0.5rem;
+}
+
+.journal-day-header + .masonry-grid { margin-bottom: 0.25rem; }

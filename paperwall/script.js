@@ -28,8 +28,10 @@ let currentUser     = null;
 let currentUsername = null;
 let selectedFile    = null;
 let activeTab       = 'feed';
-let editingPostId   = null;
-let followedUsers   = JSON.parse(localStorage.getItem('paperwall_following') || '[]');
+let editingPostId      = null;
+let followedUsers      = JSON.parse(localStorage.getItem('paperwall_following') || '[]');
+let cachedJournalPosts = [];
+let activeJournalDay   = null;
 
 /* ═══════════════════════════════════════════════════════
    DOM REFS
@@ -126,15 +128,55 @@ function initHeader() {
     `${months[now.getMonth()]} ${now.getDate()}`;
 }
 
-/* ─── Build right-side month tabs ───────────────────── */
+/* ─── Build right-side day tabs (from journal entries) ── */
 function initSideTabs() {
-  const currentMonth = new Date().getMonth();
-  MONTHS.forEach((m, i) => {
-    const tab = document.createElement('div');
-    tab.className = 'side-tab' + (i === currentMonth ? ' current' : '');
-    tab.textContent = m;
-    sideTabsEl.appendChild(tab);
+  sideTabsEl.innerHTML = ''; // populated by buildDayTabs after journal loads
+}
+
+function dayKey(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function buildDayTabs(posts) {
+  sideTabsEl.innerHTML = '';
+  if (!posts?.length) return;
+
+  // Collect unique days
+  const seen = new Map();
+  posts.forEach(post => {
+    const k = dayKey(post.created_at);
+    if (!seen.has(k)) seen.set(k, new Date(post.created_at));
   });
+
+  const todayKey = dayKey(new Date());
+
+  [...seen.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .forEach(([k, d]) => {
+      const tab = document.createElement('div');
+      tab.className = 'side-tab day-tab';
+      tab.dataset.dayKey = k;
+      tab.textContent   = `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+      if (k === todayKey)        tab.classList.add('current');
+      if (k === activeJournalDay) tab.classList.add('active-day');
+
+      tab.addEventListener('click', () => {
+        // Switch to journal if needed
+        if (activeTab !== 'journal') {
+          const journalBtn = document.querySelector('.bottom-tab[data-tab="journal"]');
+          bottomTabs.forEach(t => t.classList.remove('active'));
+          journalBtn.classList.add('active');
+          activeTab = 'journal';
+          feedSection.classList.remove('active');
+          journalSection.classList.add('active');
+          friendsSection.classList.remove('active');
+        }
+        filterJournalByDay(k, tab);
+      });
+
+      sideTabsEl.appendChild(tab);
+    });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -247,6 +289,7 @@ bottomTabs.forEach(tab => {
     feedSection.classList.toggle('active', activeTab === 'feed');
     journalSection.classList.toggle('active', activeTab === 'journal');
     friendsSection.classList.toggle('active', activeTab === 'friends');
+    if (activeTab === 'journal') loadJournal();
     if (activeTab === 'friends') loadFriendsFeed();
   });
 });
@@ -412,7 +455,88 @@ async function loadJournal() {
     return;
   }
 
-  renderPosts(journalPostsEl, data, 'journal');
+  cachedJournalPosts = data || [];
+  buildDayTabs(cachedJournalPosts);
+
+  if (activeJournalDay) {
+    const filtered = cachedJournalPosts.filter(p => dayKey(p.created_at) === activeJournalDay);
+    renderJournalByDay(filtered);
+  } else {
+    renderJournalByDay(cachedJournalPosts);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDER JOURNAL — grouped by day
+═══════════════════════════════════════════════════════ */
+function renderJournalByDay(posts) {
+  journalPostsEl.innerHTML = '';
+
+  if (!posts?.length) {
+    const msg = activeJournalDay
+      ? 'no notes for this day ✦'
+      : 'nothing here yet...<br>this is your safe space ✦';
+    journalPostsEl.innerHTML = `<div class="empty-card">${msg}</div>`;
+    return;
+  }
+
+  // Group by day
+  const dayMap = new Map();
+  posts.forEach(post => {
+    const k = dayKey(post.created_at);
+    if (!dayMap.has(k)) dayMap.set(k, []);
+    dayMap.get(k).push(post);
+  });
+
+  const dayNames   = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const monthNames = ['january','february','march','april','may','june',
+                      'july','august','september','october','november','december'];
+  const todayKey   = dayKey(new Date());
+  let   cardIndex  = 0;
+
+  [...dayMap.keys()]
+    .sort((a, b) => b.localeCompare(a))
+    .forEach(k => {
+      const d        = new Date(k + 'T12:00:00');
+      const dayPosts = dayMap.get(k);
+      const isToday  = k === todayKey;
+
+      // Day header
+      const header = document.createElement('div');
+      header.className = 'journal-day-header' + (isToday ? ' today' : '');
+      header.id = `day-${k}`;
+      header.innerHTML = `
+        <span class="jdh-day">${isToday ? 'today' : dayNames[d.getDay()]}</span>
+        <span class="jdh-date">${monthNames[d.getMonth()]} ${d.getDate()}</span>
+        <span class="jdh-count">${dayPosts.length}</span>
+      `;
+      journalPostsEl.appendChild(header);
+
+      // Cards grid
+      const grid = document.createElement('div');
+      grid.className = 'masonry-grid';
+      dayPosts.forEach(post => grid.appendChild(buildCard(post, cardIndex++, 'journal')));
+      journalPostsEl.appendChild(grid);
+    });
+}
+
+/* ═══════════════════════════════════════════════════════
+   FILTER JOURNAL BY DAY
+═══════════════════════════════════════════════════════ */
+function filterJournalByDay(k, tabEl) {
+  // Toggle off if same day clicked again
+  if (activeJournalDay === k) {
+    activeJournalDay = null;
+    document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active-day'));
+    renderJournalByDay(cachedJournalPosts);
+    return;
+  }
+  activeJournalDay = k;
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active-day'));
+  if (tabEl) tabEl.classList.add('active-day');
+
+  const filtered = cachedJournalPosts.filter(p => dayKey(p.created_at) === k);
+  renderJournalByDay(filtered);
 }
 
 /* ═══════════════════════════════════════════════════════
